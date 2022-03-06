@@ -1,0 +1,13 @@
+snippet func "create a new julia function"
+function ${1:foo}()
+	"""
+	${2:what is this function doing?}	
+	This function was created by:
+	`echo $USER`
+	
+	Erik Pillon
+	`!v strftime("%c")`
+	"""
+	return 
+end	
+endsnippet	

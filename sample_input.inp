@@ -1,0 +1,8 @@
+
+      4096    -30.0  30.0           ngrid, xmin, xmax
+
+      15.0    -5.0  2.00  2000.0       k_ini, xcenter_ini, sigma_ini, redmass
+
+      2000     1  10               nstep, dt, nwrite
+
+      2                            nstate

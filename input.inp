@@ -1,0 +1,13 @@
+
+      2048    -30.0  30.0           ngrid, xmin, xmax
+
+      15.0    -10.0  2.00  2000.0   k_ini, xcenter_ini, sigma_ini, redmass
+
+      4000        1   10            nstep, dt, nwrite
+
+      2                             nstate
+
+      1                             krange_len
+
+      10.0
+

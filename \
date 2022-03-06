@@ -1,0 +1,125 @@
+!=============================================================
+      module mainvar
+!=============================================================
+      implicit none
+      public
+      integer, parameter    :: DP = KIND(1.0d0)
+      real(DP), parameter   :: pi = 4.d0*atan(1.d0)
+
+      endmodule
+!=============================================================
+
+
+      program qdyn
+      use mainvar
+      use FFTW3
+      use mod_init
+      use mod_propag
+
+      implicit none
+      integer     :: n
+
+
+      call init()
+
+     !Propagation
+      do n=1, nstep
+         call propag_1d(wfx,wfp,ngrid,theta_v1,kin_p1,dt) 
+         call normalize1d(wfx,ngrid,dx)
+
+         if (modulo(dt*n,dtwrite) .eq. 0 ) then
+           write(*,'(F5.1)') n*dt
+           call printwf1d(wfx,x,v1)
+         endif
+      enddo
+
+
+!-- Finalization
+
+      write(*,*) "JOB DONE."
+
+      open(666,file='wf.chk', action='WRITE', iostat=iost)
+      write(666,*) "#QDYN checkpoint file for reloading WF to program"
+      write(666,*) "#Rank:",rank,"Pot:",pot,"Ngrid:",ngrid
+      write(666,*) wfx 
+      close(666)
+ 
+      end program qdyn
+
+
+!======================================================================================
+      subroutine propag_1d(wfx,wfp,ngrid,theta_v1,kin_p1,dt)
+!======================================================================================
+      use mainvar
+      use FFTW3
+      use mod_init,     only:plan_forward, plan_backward
+      implicit none
+      complex(DP), intent(inout)  :: wfx(:),wfp(:),theta_v1(:),kin_p1(:)
+      real(DP), intent(in)        :: dt
+      integer, intent(in)         :: ngrid
+      integer                     :: i
+
+      ! V(t/2)
+      wfx=wfx*theta_v1
+      ! FFT -> K
+      call dfftw_plan_dft_1d(plan_forward, ngrid, wfx, wfp, FFTW_FORWARD, FFTW_ESTIMATE )
+      call dfftw_execute_dft(plan_forward, wfx, wfp)
+      call dfftw_destroy_plan(plan_forward)
+
+      ! p(t)
+      wfp=wfp*kin_p1
+
+      ! FFT -> x
+      call dfftw_plan_dft_1d(plan_backward, ngrid, wfp, wfx, FFTW_BACKWARD, FFTW_ESTIMATE )
+      call dfftw_execute_dft(plan_backward, wfp, wfx)
+      call dfftw_destroy_plan(plan_backward)
+
+      ! V(t/2)
+      wfx=wfx(i)*theta_v1
+
+
+      end subroutine propag_1d
+!======================================================================================
+
+
+!======================================================================================
+      subroutine normalize1d(wf,ngrid,dx)
+!======================================================================================
+      use mainvar
+
+      complex(DP), intent(inout)    :: wf(:)
+      integer, intent(in)           :: ngrid
+      real(DP), intent(in)          :: dx
+      real(DP)                      :: norm
+      integer                       :: i
+
+      norm=0.0d0
+
+      do i=1,ngrid
+         norm = norm + dx * (real(wf(i))**2+aimag(wf(i))**2)
+      enddo
+
+      wf=wf/sqrt(norm)
+
+      end subroutine normalize1d
+!======================================================================================
+
+
+!======================================================================================
+      subroutine printwf1d(wf,x,v1)
+!======================================================================================
+
+      complex(DP), intent(in)    :: wf(:)
+      real(DP), intent(in)       :: x(:),v1(:)
+      integer                    :: i
+
+      do i=1,size(x)
+         write(201,*) x(i), real(wf(i)), aimag(wf(i)), real(wf(i))**2+aimag(wf(i))**2, v1(i)
+      enddo
+      write(201,*)
+      write(201,*)
+
+      end subroutine
+!======================================================================================
+
+
